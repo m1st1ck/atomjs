@@ -20,19 +20,51 @@ export type Atom<T> = {
   reset: Reset;
 };
 
-export type ObservableAtom<T> = Pick<Atom<T>, "getState" | "subscribe">;
+export type AsyncStateValue = "init" | "loading" | "loaded" | "error";
 
-export type GetAtomValue<ATOM> = ATOM extends ObservableAtom<infer ATOMVALUE>
-  ? ATOMVALUE
-  : never;
-
-export type IterateAtomsIteratable<ATOMSTUPLE> = {
-  [INDEX in keyof ATOMSTUPLE]: GetAtomValue<ATOMSTUPLE[INDEX]>;
+export type AsyncState = {
+  init: boolean;
+  loading: boolean;
+  loaded: boolean;
+  error: boolean;
+  errorMessage?: string;
 };
 
-const isObject = (a: any) => !!a && a.constructor === Object;
+export type SetAsyncStateFuncArg = (
+  currentAsyncState: AsyncState
+) => Partial<AsyncState>;
 
-const atomCore = <T>(defaultState: T): AtomCore<T> => {
+export type SetAsyncState<T> = (
+  nAsyncState: AsyncStateValue | Partial<AsyncState> | SetAsyncStateFuncArg,
+  nState?: Partial<T> | SetStateFuncArg<T>
+) => void;
+
+export type GetAsyncState<T> = () => [T, AsyncState];
+export type ResetAsync = (asyncState?: Partial<AsyncState>) => void;
+
+export type AsyncAtom<T> = {
+  subscribe: Subscribe;
+  setState: SetState<T>;
+  getCoreState: GetState<T>;
+  getAsyncState: () => AsyncState;
+  getState: GetAsyncState<T>;
+  setAsyncState: SetAsyncState<T>;
+  reset: ResetAsync;
+};
+
+export const defaultAsyncState: AsyncState = {
+  init: true,
+  loading: false,
+  loaded: false,
+  error: false,
+  errorMessage: undefined,
+};
+
+function isObject(a: any) {
+  return !!a && a.constructor === Object;
+}
+
+function atomCore<T>(defaultState: T): AtomCore<T> {
   let currentState = defaultState;
 
   let listeners: Listener[] = [];
@@ -45,13 +77,13 @@ const atomCore = <T>(defaultState: T): AtomCore<T> => {
    * This prevents any bugs around consumers calling
    * subscribe/unsubscribe in the middle of a notify.
    */
-  const ensureCanMutateNextListeners = () => {
+  function ensureCanMutateNextListeners() {
     if (nextListeners === listeners) {
       nextListeners = listeners.slice();
     }
-  };
+  }
 
-  const subscribe: Subscribe = (listener) => {
+  function subscribe(listener: Listener) {
     if (typeof listener !== "function") {
       throw new Error("Expected the listener to be a function.");
     }
@@ -64,14 +96,18 @@ const atomCore = <T>(defaultState: T): AtomCore<T> => {
       const index = nextListeners.indexOf(listener);
       nextListeners.splice(index, 1);
     };
-  };
+  }
 
-  const notify: Notify = () => {
+  function notify() {
     listeners = nextListeners;
     listeners.forEach((listener) => listener());
-  };
+  }
 
-  const setState: SetState<T> = (nState) => {
+  function setState(nState: Partial<T> | SetStateFuncArg<T>) {
+    if (arguments.length === 0) {
+      throw new Error("atom.setState cannot be used without arguments");
+    }
+
     if (typeof nState === "function") {
       currentState = (nState as SetStateFuncArg<T>)(currentState);
     } else if (isObject(nState)) {
@@ -81,11 +117,15 @@ const atomCore = <T>(defaultState: T): AtomCore<T> => {
     }
 
     notify();
-  };
+  }
 
-  const getState: GetState<T> = () => currentState;
+  function getState() {
+    return currentState;
+  }
 
-  const reset: Reset = () => setState(defaultState);
+  function reset() {
+    setState(defaultState);
+  }
 
   return {
     subscribe,
@@ -94,9 +134,9 @@ const atomCore = <T>(defaultState: T): AtomCore<T> => {
     getState,
     reset,
   };
-};
+}
 
-export const atom = <T>(defaultState: T): Atom<T> => {
+export function atom<T>(defaultState: T): Atom<T> {
   const _atomCore = atomCore(defaultState);
 
   return {
@@ -105,82 +145,72 @@ export const atom = <T>(defaultState: T): Atom<T> => {
     setState: _atomCore.setState,
     reset: _atomCore.reset,
   };
-};
+}
 
-export type HttpState = {
-  init: boolean;
-  loading: boolean;
-  loaded: boolean;
-  error: boolean;
-  errorMessage?: string;
-};
-
-export type SetHttpStateFuncArg = (
-  currentHttpState: HttpState
-) => Partial<HttpState>;
-export type SetHttpState<T> = (
-  nHttpState: Partial<HttpState> | SetHttpStateFuncArg,
-  nState?: Partial<T> | SetStateFuncArg<T>
-) => void;
-export type GetHttpState<T> = () => [T, HttpState];
-export type ResetHttp = (httpState?: Partial<HttpState>) => void;
-
-export const defaultHttpState: HttpState = {
-  init: true,
-  loading: false,
-  loaded: false,
-  error: false,
-  errorMessage: undefined,
-};
-
-export const httpAtom = <T>(defaultState: T) => {
+export function asyncAtom<T>(defaultState: T): AsyncAtom<T> {
   const _atomCore = atomCore(defaultState);
-  let currentHttpState = defaultHttpState;
+  let currentAsyncState = defaultAsyncState;
 
-  const setState = (nHttpState: Partial<HttpState> | SetHttpStateFuncArg) => {
-    if (typeof nHttpState === "function") {
-      currentHttpState = {
-        ...defaultHttpState,
+  function setAsyncState(
+    nAsyncState: AsyncStateValue | Partial<AsyncState> | SetAsyncStateFuncArg,
+    nState?: Partial<T> | SetStateFuncArg<T>
+  ) {
+    if (arguments.length === 0) {
+      throw new Error("atom.setState cannot be used without arguments");
+    }
+
+    if (typeof nAsyncState === "string") {
+      currentAsyncState = {
+        ...defaultAsyncState,
         init: false,
-        ...(nHttpState as SetHttpStateFuncArg)(currentHttpState),
+        [nAsyncState]: true,
+      };
+    } else if (typeof nAsyncState === "function") {
+      currentAsyncState = {
+        ...defaultAsyncState,
+        init: false,
+        ...(nAsyncState as SetAsyncStateFuncArg)(currentAsyncState),
       };
     } else {
-      currentHttpState = {
-        ...defaultHttpState,
+      currentAsyncState = {
+        ...defaultAsyncState,
         init: false,
-        ...nHttpState,
+        ...nAsyncState,
       };
     }
-  };
-
-  const setHttpState: SetHttpState<T> = (nHttpState, nState) => {
-    setState(nHttpState);
 
     if (nState !== undefined) {
       _atomCore.setState(nState);
     } else {
       _atomCore.notify();
     }
-  };
+  }
 
-  const getHttpState = () => currentHttpState;
-  const getState: GetHttpState<T> = () => [
-    _atomCore.getState(),
-    currentHttpState,
-  ];
+  function getAsyncState() {
+    return currentAsyncState;
+  }
 
-  const reset: ResetHttp = (httpState = defaultHttpState) => {
-    setState(httpState);
+  function getState(): [T, AsyncState] {
+    return [_atomCore.getState(), currentAsyncState];
+  }
+
+  function reset(asyncState: Partial<AsyncState> = defaultAsyncState) {
+    currentAsyncState = {
+      ...defaultAsyncState,
+      init: false,
+      ...asyncState,
+    };
+
     _atomCore.reset();
-  };
+  }
 
   return {
     subscribe: _atomCore.subscribe,
     setState: _atomCore.setState,
     getCoreState: _atomCore.getState,
-    getHttpState,
+    getAsyncState,
     getState,
-    setHttpState,
+    setAsyncState,
     reset,
   };
-};
+}

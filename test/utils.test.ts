@@ -2,8 +2,8 @@ import {
   waitForAtom,
   waitForAtoms,
   atom,
-  httpAtom,
-  defaultHttpState,
+  asyncAtom,
+  defaultAsyncState,
 } from "../src/index";
 
 type UserAtom = {
@@ -14,7 +14,7 @@ const userAtom = atom<UserAtom>({
   name: undefined,
 });
 
-const userHttpAtom = httpAtom<UserAtom>({
+const userAsyncAtom = asyncAtom<UserAtom>({
   name: undefined,
 });
 
@@ -24,7 +24,7 @@ describe("Utils", () => {
   beforeEach(() => {
     userAtom.reset();
     countAtom.reset();
-    userHttpAtom.reset();
+    userAsyncAtom.reset();
   });
 
   test("waitForAtom", (done) => {
@@ -49,14 +49,14 @@ describe("Utils", () => {
     });
   });
 
-  test("waitForAtom http", (done) => {
+  test("waitForAtom async", (done) => {
     setTimeout(() => {
-      userHttpAtom.setHttpState({ loaded: true }, { name: "Stad" });
+      userAsyncAtom.setAsyncState({ loaded: true }, { name: "Stad" });
     }, 0);
 
-    waitForAtom(userHttpAtom, ([, { loaded }]) => loaded).then(() => {
-      expect(userHttpAtom.getCoreState().name).toBe("Stad");
-      expect(userHttpAtom.getHttpState()).toMatchObject({
+    waitForAtom(userAsyncAtom, ([, { loaded }]) => loaded).then(() => {
+      expect(userAsyncAtom.getCoreState().name).toBe("Stad");
+      expect(userAsyncAtom.getAsyncState()).toMatchObject({
         init: false,
         loading: false,
         loaded: true,
@@ -68,15 +68,15 @@ describe("Utils", () => {
     });
   });
 
-  test("waitForAtom http stop", (done) => {
+  test("waitForAtom async stop", (done) => {
     const timeout = setTimeout(() => {
-      expect(userHttpAtom.getState()[0].name).toBe(undefined);
-      expect(userHttpAtom.getState()[1]).toMatchObject(defaultHttpState);
+      expect(userAsyncAtom.getState()[0].name).toBe(undefined);
+      expect(userAsyncAtom.getState()[1]).toMatchObject(defaultAsyncState);
       done();
     }, 0);
 
     waitForAtom(
-      userHttpAtom,
+      userAsyncAtom,
       ([{ name }, { loaded }]) => name === "Stad" && loaded
     ).then(() => {
       clearTimeout(timeout);
@@ -97,36 +97,36 @@ describe("Utils", () => {
     });
   });
 
-  test("waitForAtoms http", (done) => {
+  test("waitForAtoms async", (done) => {
     setTimeout(() => {
-      userHttpAtom.setHttpState({ loaded: true }, { name: "Stad" });
+      userAsyncAtom.setAsyncState({ loaded: true }, { name: "Stad" });
       countAtom.setState(2);
     }, 0);
 
     waitForAtoms(
-      [countAtom, userHttpAtom],
-      ([countData, [, httpStatus]]) => httpStatus.loaded || countData === 3
+      [countAtom, userAsyncAtom],
+      ([countData, [, asyncStatus]]) => asyncStatus.loaded || countData === 3
     ).then(() => {
-      expect(userHttpAtom.getState()[0].name).toBe("Stad");
+      expect(userAsyncAtom.getState()[0].name).toBe("Stad");
       expect(countAtom.getState()).toBe(2);
       done();
     });
   });
 
-  test("waitForAtoms http stop", (done) => {
-    userHttpAtom.setHttpState({ loaded: true }, { name: "Stad" });
+  test("waitForAtoms async stop", (done) => {
+    userAsyncAtom.setAsyncState({ loaded: true }, { name: "Stad" });
 
     const timeout = setTimeout(() => {
-      expect(userHttpAtom.getState()[0].name).toBe("Stad");
-      expect(userHttpAtom.getState()[1].loaded).toBe(true);
+      expect(userAsyncAtom.getState()[0].name).toBe("Stad");
+      expect(userAsyncAtom.getState()[1].loaded).toBe(true);
       expect(countAtom.getState()).toBe(0);
       done();
     }, 100);
 
     waitForAtoms(
-      [countAtom, userHttpAtom],
-      ([countData, [userData, httpStatus]]) =>
-        httpStatus.loaded && userData.name === "Stad" && countData === 3
+      [countAtom, userAsyncAtom],
+      ([countData, [userData, asyncStatus]]) =>
+        asyncStatus.loaded && userData.name === "Stad" && countData === 3
     ).then(() => {
       clearTimeout(timeout);
     });

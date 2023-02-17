@@ -1,32 +1,32 @@
 # AtomJS
 
-### Flexible state management
+Flexible state management
 
 ## Atoms
 
-### atom(state): Atom
+### atom\<T\>(state: T): Atom\<T\>
 
 ```javascript
 import { atom } from "atomjs";
 
 // create new atom
 const countAtom = atom(0);
-// change state
+// change state - there is no equality check and all subscribers will be notified
 countAtom.setState(2);
 // change state with callback function
 countAtom.setState((previousCount) => previousCount + 1);
 
 const userAtom = atom({ name: "Stad", age: 2 });
-// updating objects directly will merge with previous state
+// updating objects will merge with previous state
 userAtom.setState({ age: 3 }); // { name: "Stad", age: 3 }
-// using update function needs to provide the whole object
+// update function needs to return the whole object
 userAtom.setState((prevState) => ({
   ...prevState,
   age: 4,
 }));
 // get state
 const count = countAtom.getState(); // count === 3
-// listen for changes to state
+// listen for state updates - triggered on every atom.setState
 const unsubscribe = countAtom.subscribe(() => {
   // do something with new state
   const count = countAtom.getState();
@@ -37,9 +37,9 @@ unsubscribe();
 countAtom.reset();
 ```
 
-### httpAtom(state): Atom
+### asyncAtom\<T\>(state: T): Atom\<T\>
 
-contains an additional http state
+contains an additional async state
 
 ```javascript
 {
@@ -54,53 +54,41 @@ contains an additional http state
 it provides addition functionallities to manage both states
 
 ```javascript
-import { httpAtom } from "atomjs";
+import { asyncAtom } from "atomjs";
 
-// create new http atom
-const countAtom = httpAtom(0);
+// create new async atom
+const countAtom = asyncAtom(0);
 // getState returns a tuple both states
-const [count, httpState] = countAtom.getState();
+const [count, asyncState] = countAtom.getState();
 // get atom state only
 const count = countAtom.getCoreState();
-// get http state only
-const httpState = countAtom.getHttpState();
-// update http state - will override previus state
-countAtom.setHttpState({ loading: true }); // { loading: true, init: false, error: false, ... }
+// get async state only
+const asyncState = countAtom.getAsyncState();
+// update async state - will override previus state
+countAtom.setAsyncState({ loading: true }); // { loading: true, init: false, error: false, ... }
+// update async state using enum - init, loading, loaded, error
+countAtom.setAsyncState("loading"); // { loading: true, init: false, error: false, ... }
 // update both state
-countAtom.setHttpState({ loaded: true }, 4); // count === 4
+countAtom.setAsyncState({ loaded: true }, 4); // count === 4
 // handle errors
-countAtom.setHttpState({ error: true, errorMessage: "..." });
-// reset - will reset both state and httpState
+countAtom.setAsyncState({ error: true, errorMessage: "..." });
+// reset - will reset both state and asyncState
 countAtom.reset(); // ({ init: true, loading: false, ... })
-// you can also provide httpState to reset to
+// you can also provide asyncState to reset to
 countAtom.reset({ loaded: true }); // ({ init: false, loaded: true, ... })
-```
-
-## Hooks
-
-### useAtom(Atom): state
-
-```javascript
-import { httpAtom, atom, useAtom } from "atomjs";
-
-const nameAtom = httpAtom("Stad");
-const countAtom = atom(0);
-// listen for state changes and rerender component
-const [name, { loading }] = useAtom(nameAtom);
-const count = useAtom(countAtom);
 ```
 
 ## Utils
 
-### waitForAtom(atom, selector): Promise
+### waitForAtom\<T\>(atom: ObservableAtom\<T\>, selector: (atomState: T) => boolean): Promise\<void\>
 
 ```javascript
-import { httpAtom, waitForAtom } from "../src/.";
+import { asyncAtom, waitForAtom } from "atomjs";
 
-const userAtom = httpAtom({ name: undefined });
+const userAtom = asyncAtom({ name: undefined });
 
 const fetchUser = async () => {
-  const { loading } = userAtom.getHttpState();
+  const { loading } = userAtom.getAsyncState();
 
   // don't fetch if already fetching
   if (loading) {
@@ -111,18 +99,18 @@ const fetchUser = async () => {
   }
 
   // Fetch user... and update atom
-  userAtom.setHttpState({ loaded: true }, user);
+  userAtom.setAsyncState({ loaded: true }, user);
 };
 ```
 
-### waitForAtoms([atom], selector): Promise
+### waitForAtoms<T extends ObservableAtom\<any>\[]>(atoms: readonly [...T], selector: (atomState: IterateAtomsIteratable\<T\>) => boolean): Promise\<void\>
 
 ```javascript
-import { waitForAtoms } from "../src/.";
+import { waitForAtoms } from "atomjs";
 
 waitForAtoms(
   [atom1, atom2],
-  ([[atom1Data, atom1HttpStatus], [atom2Data, atom2HttpStatus]]) =>
-    atom1HttpStatus.loaded || atom1HttpStatus.loaded
+  ([[atom1Data, atom1AsyncStatus], [atom2Data, atom2AsyncStatus]]) =>
+    atom1AsyncStatus.loaded || atom1AsyncStatus.loaded
 ).then(() => {});
 ```
