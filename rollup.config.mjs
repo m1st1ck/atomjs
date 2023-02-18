@@ -7,7 +7,11 @@ export default [
     input: "src/index.ts",
     plugins: [
       typescript(),
-      babel({ extensions: [".ts"], exclude: "node_modules/**" }),
+      babel({
+        extensions: [".ts"],
+        exclude: "node_modules/**",
+        babelHelpers: "bundled",
+      }),
       terser(),
     ],
     output: {
@@ -23,7 +27,11 @@ export default [
     input: "src/index.ts",
     plugins: [
       typescript(),
-      babel({ extensions: [".ts"], exclude: "node_modules/**" }),
+      babel({
+        extensions: [".ts"],
+        exclude: "node_modules/**",
+        babelHelpers: "bundled",
+      }),
       terser(),
     ],
     output: {
