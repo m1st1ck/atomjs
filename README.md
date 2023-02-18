@@ -7,7 +7,7 @@ Flexible state management
 ### atom\<T\>(state: T): Atom\<T\>
 
 ```javascript
-import { atom } from "atomjs";
+import { atom } from "@m1st1ck/atomjs";
 
 // create new atom
 const countAtom = atom(0);
@@ -54,7 +54,7 @@ contains an additional async state
 it provides addition functionallities to manage both states
 
 ```javascript
-import { asyncAtom } from "atomjs";
+import { asyncAtom } from "@m1st1ck/atomjs";
 
 // create new async atom
 const countAtom = asyncAtom(0);
@@ -83,7 +83,7 @@ countAtom.reset({ loaded: true }); // ({ init: false, loaded: true, ... })
 ### waitForAtom\<T\>(atom: ObservableAtom\<T\>, selector: (atomState: T) => boolean): Promise\<void\>
 
 ```javascript
-import { asyncAtom, waitForAtom } from "atomjs";
+import { asyncAtom, waitForAtom } from "@m1st1ck/atomjs";
 
 const userAtom = asyncAtom({ name: undefined });
 
@@ -106,7 +106,7 @@ const fetchUser = async () => {
 ### waitForAtoms<T extends ObservableAtom\<any>\[]>(atoms: readonly [...T], selector: (atomState: IterateAtomsIteratable\<T\>) => boolean): Promise\<void\>
 
 ```javascript
-import { waitForAtoms } from "atomjs";
+import { waitForAtoms } from "@m1st1ck/atomjs";
 
 waitForAtoms(
   [atom1, atom2],
