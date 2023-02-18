@@ -1,4 +1,4 @@
-# AtomJS
+# AtomJS [![npm Version](https://img.shields.io/npm/v/@m1st1ck/atomjs.svg?style=flat-square)](https://www.npmjs.org/package/@m1st1ck/atomjs)
 
 Flexible state management
 
