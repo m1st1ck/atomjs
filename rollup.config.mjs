@@ -35,7 +35,7 @@ export default [
       terser(),
     ],
     output: {
-      dir: "dist",
+      file: "dist/index.umd.min.js",
       format: "umd",
       name: "atomjs",
       indent: false,
