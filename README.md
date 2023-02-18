@@ -2,6 +2,15 @@
 
 Flexible state management
 
+## Installation
+```sh
+npm i @m1st1ck/atomjs
+```
+
+```sh
+yarn add @m1st1ck/atomjs
+```
+
 ## Atoms
 
 ### atom\<T\>(state: T): Atom\<T\>
@@ -113,4 +122,16 @@ waitForAtoms(
   ([[atom1Data, atom1AsyncStatus], [atom2Data, atom2AsyncStatus]]) =>
     atom1AsyncStatus.loaded || atom1AsyncStatus.loaded
 ).then(() => {});
+```
+
+## React Hooks
+
+https://github.com/m1st1ck/atomjs-react
+
+```sh
+npm i @m1st1ck/atomjs-react
+```
+
+```sh
+yarn add @m1st1ck/atomjs-react
 ```
