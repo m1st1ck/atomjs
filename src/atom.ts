@@ -4,7 +4,8 @@ export type Unsubscribe = () => void;
 export type Notify = () => void;
 export type GetState<T> = () => T;
 export type SetStateFuncArg<T> = (currentState: T) => T;
-export type SetState<T> = (nState: Partial<T> | SetStateFuncArg<T>) => void;
+export type NewState<T> = Partial<T> | SetStateFuncArg<T>;
+export type SetState<T> = (nState: NewState<T>) => void;
 export type Reset = () => void;
 export type AtomCore<T> = {
   subscribe: Subscribe;
@@ -36,7 +37,7 @@ export type SetAsyncStateFuncArg = (
 
 export type SetAsyncState<T> = (
   nAsyncState: AsyncStateValue | Partial<AsyncState> | SetAsyncStateFuncArg,
-  nState?: Partial<T> | SetStateFuncArg<T>
+  nState?: NewState<T>
 ) => void;
 
 export type GetAsyncState<T> = () => [T, AsyncState];
@@ -103,7 +104,7 @@ function atomCore<T>(defaultState: T): AtomCore<T> {
     listeners.forEach((listener) => listener());
   }
 
-  function setState(nState: Partial<T> | SetStateFuncArg<T>) {
+  function setState(nState: NewState<T>) {
     if (arguments.length === 0) {
       throw new Error("atom.setState cannot be used without arguments");
     }
@@ -153,7 +154,7 @@ export function asyncAtom<T>(defaultState: T): AsyncAtom<T> {
 
   function setAsyncState(
     nAsyncState: AsyncStateValue | Partial<AsyncState> | SetAsyncStateFuncArg,
-    nState?: Partial<T> | SetStateFuncArg<T>
+    nState?: NewState<T>
   ) {
     if (arguments.length === 0) {
       throw new Error("atom.setState cannot be used without arguments");
@@ -179,8 +180,8 @@ export function asyncAtom<T>(defaultState: T): AsyncAtom<T> {
       };
     }
 
-    if (nState !== undefined) {
-      _atomCore.setState(nState);
+    if (arguments.length === 2) {
+      _atomCore.setState(nState!);
     } else {
       _atomCore.notify();
     }

@@ -84,13 +84,13 @@ describe("AsyncAtoms - primitive", () => {
     primitiveAsyncAtom.setAsyncState({}, 0);
     expect(primitiveAsyncAtom.getState()).toMatchObject([0, CleanAsyncState]);
 
-    primitiveAsyncAtom.setAsyncState({}, null);
+    primitiveAsyncAtom.setAsyncState({}, undefined);
     expect(primitiveAsyncAtom.getState()).toMatchObject([
-      null,
+      undefined,
       CleanAsyncState,
     ]);
 
-    primitiveAsyncAtom.setAsyncState({}, undefined);
+    primitiveAsyncAtom.setAsyncState({}, null);
     expect(primitiveAsyncAtom.getState()).toMatchObject([
       null,
       CleanAsyncState,
